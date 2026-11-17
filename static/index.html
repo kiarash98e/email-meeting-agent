@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ایجنت ایمیل و جلسات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1b1f24;--muted:#667085;--line:#e4e7ec;--accent:#2f6fed;--accent-soft:#eaf1ff;--ok:#067647;--ok-soft:#ecfdf3;--warn:#b54708;--warn-soft:#fffaeb;--err:#b42318}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1216;--card:#171b21;--text:#e6e8eb;--muted:#98a2b3;--line:#2a3038;--accent:#6b9bff;--accent-soft:#1c2740;--ok:#47cd89;--ok-soft:#0f2a1d;--warn:#f79009;--warn-soft:#2b2012;--err:#f97066}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Vazirmatn,Tahoma,sans-serif;line-height:1.8}
+.wrap{max-width:1200px;margin:0 auto;padding:24px 16px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}}
+header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:1.35rem;margin:0}
+.badge{font-size:.8rem;color:var(--muted)}
+.demo{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:2px 8px;font-size:.8rem;margin-inline-start:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+form{display:flex;flex-direction:column;gap:10px}
+textarea,input[type=text]{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+#q{min-height:76px;resize:vertical}
+textarea:focus,input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chips button{background:var(--accent-soft);color:var(--accent);font-size:.85rem;padding:4px 12px}
+button{font:inherit;border:0;border-radius:10px;padding:7px 16px;cursor:pointer;background:var(--accent);color:#fff}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+button.danger{background:transparent;color:var(--err);border:1px solid var(--line)}
+button.send{background:var(--ok)}
+button:disabled{opacity:.5;cursor:default}
+.spacer{flex:1}
+#thread{display:flex;flex-direction:column;gap:16px;margin-top:16px}
+.q{font-weight:700}
+.steps{font-size:.85rem;color:var(--muted);border-inline-start:3px solid var(--line);padding-inline-start:10px;margin:8px 0;max-height:200px;overflow:auto}
+.steps div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.steps .warn{color:var(--warn);white-space:normal}
+.steps .note{white-space:normal;font-style:italic}
+.answer{overflow-wrap:anywhere}
+.answer a{color:var(--accent)}
+.answer table{border-collapse:collapse;display:block;overflow:auto}
+.answer td,.answer th{border:1px solid var(--line);padding:4px 8px}
+.err{color:var(--err)}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s 1s linear infinite;vertical-align:middle;margin-inline-end:6px}
+@keyframes s{to{transform:rotate(360deg)}}
+aside{position:sticky;top:16px;padding:0;overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;background:transparent;color:var(--muted);border-radius:0;padding:10px 4px;font-size:.9rem;border-bottom:2px solid transparent}
+.tabs button[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.count{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:#fff;font-size:.75rem;line-height:20px;margin-inline-start:4px}
+.count:empty{display:none}
+.pane{padding:12px 14px;max-height:calc(100vh - 140px);overflow:auto}
+.pane[hidden]{display:none}
+.item{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;font-size:.88rem}
+.item .t{font-weight:700}
+.item .s{color:var(--muted);font-size:.8rem}
+.item label{display:block;font-size:.75rem;color:var(--muted);margin-top:6px}
+.item textarea{min-height:140px;resize:vertical;font-size:.88rem}
+.item input{font-size:.88rem;padding:6px 10px}
+.item .row{margin-top:8px}
+.item.unread .t::before{content:"● ";color:var(--accent)}
+.tag{display:inline-block;background:var(--ok-soft);color:var(--ok);border-radius:6px;padding:0 6px;font-size:.75rem}
+.empty{color:var(--muted);font-size:.85rem;padding:8px 0}
+.toast{position:fixed;bottom:16px;inset-inline-start:16px;background:var(--text);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:.9rem;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ایجنت مدیریت ایمیل و جلسات <span class="demo" id="demo" hidden>حالت نمایشی</span></h1>
+    <span class="badge" id="status">…</span>
+  </header>
+
+  <main>
+    <div class="card">
+      <form id="f">
+        <div class="row chips">
+          <button type="button" data-p="ایمیل‌های خوانده‌نشده را دسته‌بندی و خلاصه کن و بگو کدام‌ها نیاز به اقدام دارند.">خلاصهٔ ایمیل‌ها</button>
+          <button type="button" data-p="برنامهٔ جلسات امروز و فردا را نشان بده.">برنامهٔ امروز</button>
+          <button type="button" data-p="برای ایمیل‌هایی که نیاز به پاسخ دارند پیش‌نویس پاسخ آماده کن.">پیش‌نویس پاسخ‌ها</button>
+          <button type="button" data-p="ایمیل‌هایی که درخواست جلسه دارند را پیدا کن و وقت آزاد پیشنهاد بده.">درخواست‌های جلسه</button>
+        </div>
+        <textarea id="q" placeholder="مثلاً: با سارا سه‌شنبه ساعت ۱۴ یک جلسهٔ یک‌ساعته بگذار و دعوت‌نامه آماده کن… (Ctrl+Enter)" required></textarea>
+        <div class="row">
+          <span class="badge">هیچ ایمیلی بدون تأیید شما فرستاده نمی‌شود.</span>
+          <span class="spacer"></span>
+          <button type="button" class="ghost" id="newchat">گفت‌وگوی تازه</button>
+          <button type="submit" id="go">ارسال به ایجنت</button>
+        </div>
+      </form>
+    </div>
+    <div id="thread"></div>
+  </main>
+
+  <aside class="card">
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="drafts">صف تأیید<span class="count" id="nd"></span></button>
+      <button role="tab" aria-selected="false" data-tab="meetings">جلسات<span class="count" id="nm"></span></button>
+      <button role="tab" aria-selected="false" data-tab="inbox">صندوق<span class="count" id="ni"></span></button>
+    </div>
+    <div class="pane" id="drafts"></div>
+    <div class="pane" id="meetings" hidden></div>
+    <div class="pane" id="inbox" hidden></div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let history = [];
+const md = t => DOMPurify.sanitize(marked.parse(t || ""));
+const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const when = v => (v || "").replace("T", " ");
+const toast = m => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); setTimeout(() => t.classList.remove("on"), 2600); };
+
+fetch("/api/status").then(r => r.json()).then(s => {
+  $("#status").textContent = `${s.address} · مدل: ${s.model}`;
+  $("#demo").hidden = !s.demo;
+}).catch(() => $("#status").textContent = "سرور در دسترس نیست");
+
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll(".pane").forEach(p => p.hidden = p.id !== b.dataset.tab);
+});
+
+async function loadDrafts() {
+  const list = await (await fetch("/api/drafts")).json();
+  $("#nd").textContent = list.length || "";
+  $("#drafts").innerHTML = list.length ? "" : '<div class="empty">پیش‌نویسی در انتظار تأیید نیست.</div>';
+  for (const d of list) {
+    const el = document.createElement("div");
+    el.className = "item";
+    const inv = d.meeting ? `<span class="tag">${d.ics_method === "CANCEL" ? "لغو جلسه" : "دعوت‌نامهٔ تقویم"} · ${esc(when(d.meeting.start))}</span>` : "";
+    el.innerHTML = `${inv}
+      <label>به</label><input type="text" name="to" dir="ltr" value="${esc(d.to)}">
+      <label>رونوشت</label><input type="text" name="cc" dir="ltr" value="${esc(d.cc)}">
+      <label>موضوع</label><input type="text" name="subject" value="${esc(d.subject)}">
+      <label>متن</label><textarea name="body" dir="auto">${esc(d.body)}</textarea>
+      <div class="row"><button class="send">ارسال</button><button class="ghost" data-a="save">ذخیره</button><span class="spacer"></span><button class="danger" data-a="del">حذف</button></div>`;
+    const val = n => el.querySelector(`[name=${n}]`).value;
+    const save = () => fetch(`/api/drafts/${d.id}`, {method: "PUT", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({to: val("to"), cc: val("cc"), subject: val("subject"), body: val("body")})});
+    el.querySelector("[data-a=save]").onclick = async () => { await save(); toast("ذخیره شد"); };
+    el.querySelector("[data-a=del]").onclick = async () => {
+      if (!confirm("این پیش‌نویس حذف شود؟")) return;
+      await fetch(`/api/drafts/${d.id}`, {method: "DELETE"}); loadDrafts();
+    };
+    el.querySelector(".send").onclick = async e => {
+      if (!confirm(`ارسال ایمیل به ${val("to")}؟`)) return;
+      e.target.disabled = true;
+      await save();
+      const r = await fetch(`/api/drafts/${d.id}/send`, {method: "POST"});
+      const j = await r.json();
+      if (r.ok) { toast(j.demo ? "ارسال شبیه‌سازی شد (حالت نمایشی)" : "ارسال شد ✓"); refresh(); }
+      else { toast(j.error || "ارسال ناموفق"); e.target.disabled = false; }
+    };
+    $("#drafts").appendChild(el);
+  }
+}
+
+async function loadMeetings() {
+  const list = await (await fetch("/api/meetings")).json();
+  $("#nm").textContent = list.length || "";
+  $("#meetings").innerHTML = (list.length ? list.map(m => `<div class="item">
+      <div class="t">${esc(m.title)}</div>
+      <div class="s">${esc(when(m.start))} تا ${esc(m.end.slice(11))}${m.location ? " · " + esc(m.location) : ""}</div>
+      ${m.attendees?.length ? `<div class="s" dir="ltr">${esc(m.attendees.join(", "))}</div>` : ""}
+      <div class="row"><a href="/api/meetings/${m.id}.ics" class="s">دانلود .ics</a></div></div>`).join("")
+    : '<div class="empty">جلسه‌ای در پیش نیست.</div>')
+    + '<div class="row"><a class="s" href="/api/calendar.ics">دانلود کل تقویم (.ics) برای Google/Outlook</a></div>';
+}
+
+async function loadInbox() {
+  const r = await fetch("/api/inbox"), list = await r.json();
+  if (!r.ok) { $("#inbox").innerHTML = `<div class="err">${esc(list.error)}</div>`; return; }
+  $("#ni").textContent = list.filter(m => m.unread).length || "";
+  $("#inbox").innerHTML = list.length ? list.map(m => `<div class="item ${m.unread ? "unread" : ""}">
+      <div class="t">${esc(m.subject || "(بدون موضوع)")}</div>
+      <div class="s">${esc(m.from)} · ${esc(when(m.date))}</div>
+      <div class="s" dir="auto">${esc(m.snippet)}</div></div>`).join("") : '<div class="empty">ایمیلی نیست.</div>';
+}
+
+const refresh = () => Promise.allSettled([loadDrafts(), loadMeetings(), loadInbox()]);
+refresh();
+
+document.querySelectorAll(".chips button").forEach(b => b.onclick = () => { $("#q").value = b.dataset.p; $("#f").requestSubmit(); });
+$("#q").addEventListener("keydown", e => { if (e.key === "Enter" && e.ctrlKey) $("#f").requestSubmit(); });
+$("#newchat").onclick = () => { history = []; $("#thread").innerHTML = ""; $("#q").focus(); };
+
+$("#f").addEventListener("submit", async e => {
+  e.preventDefault();
+  const message = $("#q").value.trim();
+  if (!message || $("#go").disabled) return;
+  $("#go").disabled = true;
+
+  const box = document.createElement("div");
+  box.className = "card";
+  box.innerHTML = `<div class="q"></div><div class="steps"><div><span class="spin"></span>در حال کار…</div></div><div class="answer"></div>`;
+  box.querySelector(".q").textContent = message;
+  $("#thread").prepend(box);
+  const steps = box.querySelector(".steps"), answer = box.querySelector(".answer");
+  let text = "", n = 0, failed = false, changed = false;
+  const addStep = (html, cls = "") => { const d = document.createElement("div"); d.className = cls; d.innerHTML = html; steps.appendChild(d); steps.scrollTop = steps.scrollHeight; };
+
+  const handle = (ev, data) => {
+    if (ev === "text") { text += data.text; answer.innerHTML = md(text); }
+    else if (ev === "reset") { addStep(esc(data.note), "note"); text = ""; answer.innerHTML = ""; }
+    else if (ev === "step") { if (data.kind === "warn") addStep(`⚠ ${esc(data.text)}`, "warn"); else { n++; addStep(esc(data.text)); } }
+    else if (ev === "error") { failed = true; answer.insertAdjacentHTML("beforeend", `<p class="err">${esc(data.message)}</p>`); }
+    else if (ev === "done") { text = data.text || text; answer.innerHTML = md(text); changed = data.changed; }
+  };
+
+  try {
+    const res = await fetch("/api/chat", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({message, history})});
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream: true});
+      let i;
+      while ((i = buf.indexOf("\n\n")) >= 0) {
+        const chunk = buf.slice(0, i); buf = buf.slice(i + 2);
+        const ev = (chunk.match(/^event: (.*)$/m) || [])[1], data = (chunk.match(/^data: (.*)$/m) || [])[1];
+        if (ev && data) handle(ev, JSON.parse(data));
+      }
+    }
+  } catch {
+    failed = true;
+    answer.insertAdjacentHTML("beforeend", `<p class="err">ارتباط با سرور قطع شد.</p>`);
+  }
+
+  steps.firstElementChild.innerHTML = `✓ ${n} کار انجام شد`;
+  if (!failed && text) { history.push({role: "user", content: message}, {role: "assistant", content: text}); $("#q").value = ""; }
+  $("#go").disabled = false;
+  refresh();
+  if (changed) toast("صف تأیید / تقویم به‌روز شد");
+});
+</script>
+</body>
+</html>

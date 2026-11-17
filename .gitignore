@@ -1,0 +1,13 @@
+# secrets
+.env
+
+# runtime data (your meetings, drafts and simulated sends)
+data/meetings.json
+data/drafts.json
+data/demo_sent.json
+data/*.tmp
+data/*.log
+
+__pycache__/
+*.pyc
+.venv/
